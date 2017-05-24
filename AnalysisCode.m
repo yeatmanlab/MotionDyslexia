@@ -321,6 +321,78 @@ readingInterceptReading(1) = lmReading.Coefficients.Estimate(1);
 readingSlopeReading(1) = lmReading.Coefficients.Estimate(2);
 title('Figure 2a')
 
+%% Figure 3 - Reading score growth split by motion sensitivity
+% Compare growth rates for subjects with low versus high motion sensitivity
+
+% Median split based on the first session
+high = y(:,1) > nanmedian(y(:,1));
+low = y(:,1) <= nanmedian(y(:,1));
+
+figure(5); clf; hold on;
+% set(gca,'FontName','Arial','FontSize',14)
+nReps = 10e3;
+
+for i = 1: 4
+    boot1.dist = mean(bootstrp(nReps, @(x) x, wj.brs(high,i)),2);
+    boot1.ci = prctile(boot1.dist, [16 84]);
+    boot2.dist = mean(bootstrp(nReps, @(x) x, wj.brs(low,i)),2);
+    boot2.ci = prctile(boot2.dist, [16 84]);
+    
+    plot([i,i],[boot1.ci(1) boot1.ci(2)], '-','Color',[0 0 0],'LineWidth',1);
+    plot(i,nanmean(wj.brs(high,i)),'o','MarkerFaceColor',ccolor(2,:),'MarkerEdgeColor',[0 0 0],'MarkerSize',9,'LineWidth',1);
+    
+    plot([i,i],[boot2.ci(1) boot2.ci(2)], '-','Color',[0 0 0],'LineWidth',1);
+    plot(i,nanmean(wj.brs(low,i)),'o','MarkerFaceColor',ccolor(1,:),'MarkerEdgeColor',[0 0 0],'MarkerSize',9,'LineWidth',1);
+end
+
+set(gca,'YLim',[65 110],'YTick',70:10:110,'XLim',[.5 4.5],'XTick',1:4,'FontName','Arial','FontSize',12,'TickDir','out','LineWidth',1);
+axis square
+% set(gca,'YLim',[65 105]);
+ylabel('Basic reading skills','FontName','Arial','FontSize',16);
+
+lmHigh = fitlm([1:4],[nanmean(wj.brs(high,1)) nanmean(wj.brs(high,2)) nanmean(wj.brs(high,3)) nanmean(wj.brs(high,4))]);
+lmLow = fitlm([1:4],[nanmean(wj.brs(low,1)) nanmean(wj.brs(low,2)) nanmean(wj.brs(low,3)) nanmean(wj.brs(low,4))]);
+readingInterceptAll(1) = lmHigh.Coefficients.Estimate(1);
+readingSlopeAll(1) = lmHigh.Coefficients.Estimate(2);
+readingInterceptAll(2) = lmLow.Coefficients.Estimate(1);
+readingSlopeAll(2) = lmLow.Coefficients.Estimate(2);
+
+% Bootstrap the slope!!!
+for iSubject = 1: length(subjectList)
+    temp1 = fitlm([1:4],wj.brs(iSubject,:));
+    slopeSubject(iSubject) = temp1.Coefficients.Estimate(2);
+end
+
+nBoots = 10e3;
+boot.high = mean(PsychRandSample(slopeSubject(high),[sum(high) nBoots]));
+boot.low = mean(PsychRandSample(slopeSubject(low),[sum(low) nBoots]));
+boot.ci.high = prctile(boot.high,[2.5 97.5]);
+boot.ci.low = prctile(boot.low,[2.5 97.5]);
+
+title('Figure 3')
+
+%% Supplementary Figure 3 - Reading growth does not depend on motion sensitivity
+
+for iSubject = 1: length(subjectList)
+    lm = fitlm([1:4],wj.brs(iSubject,:));
+    readingIntercept(iSubject) = lm.Coefficients.Estimate(1);
+    readingSlope(iSubject) = lm.Coefficients.Estimate(2);
+end
+
+[b1All,~,~,~,statsAll] = regress(readingSlope', [ones(length(readingIntercept),1) y(:,1)]);
+
+figure(6); clf; hold on;
+set(gca,'FontName','Arial','FontSize',14)
+x = linspace(0, .7,100);
+yFit = b1All(1) + b1All(2)*x;
+plot(x, yFit, 'Color',[0 0 0],'LineWidth',2);
+
+plot(y(:,1), readingSlope,'o','MarkerFaceColor',[0 0 0],'MarkerEdgeColor',[1 1 1],'MarkerSize',9);
+set(gca,'XTickLabel',{'0','20','40','60','80'})
+xlabel('Motion discrimination threshold (% coherence)')
+ylabel('Learning growth rate')
+title('Supplementary figure 3')
+
 %% Analysis of thresholds by block (Figure 2b)
 % The purpose of this is to charachterize the task-learning effect.
 % We pull out thresholds for each block. There are 3 blocks per session.
@@ -414,80 +486,6 @@ title('Figure 2b')
 % Non-parametric test
 [pVal,n] = signrank(nanmean([squeeze(blockData(1,1,:)) squeeze(blockData(2,1,:))],2),meanYShift);
 
-
-
-%% Figure 3 - Reading score growth split by motion sensitivity
-% Compare growth rates for subjects with low versus high motion sensitivity
-
-% Median split based on the first session
-high = y(:,1) > nanmedian(y(:,1));
-low = y(:,1) <= nanmedian(y(:,1));
-
-figure(5); clf; hold on;
-% set(gca,'FontName','Arial','FontSize',14)
-nReps = 10e3;
-
-for i = 1: 4
-    boot1.dist = mean(bootstrp(nReps, @(x) x, wj.brs(high,i)),2);
-    boot1.ci = prctile(boot1.dist, [16 84]);
-    boot2.dist = mean(bootstrp(nReps, @(x) x, wj.brs(low,i)),2);
-    boot2.ci = prctile(boot2.dist, [16 84]);
-    
-    plot([i,i],[boot1.ci(1) boot1.ci(2)], '-','Color',[0 0 0],'LineWidth',1);
-    plot(i,nanmean(wj.brs(high,i)),'o','MarkerFaceColor',ccolor(2,:),'MarkerEdgeColor',[0 0 0],'MarkerSize',9,'LineWidth',1);
-    
-    plot([i,i],[boot2.ci(1) boot2.ci(2)], '-','Color',[0 0 0],'LineWidth',1);
-    plot(i,nanmean(wj.brs(low,i)),'o','MarkerFaceColor',ccolor(1,:),'MarkerEdgeColor',[0 0 0],'MarkerSize',9,'LineWidth',1);
-end
-
-set(gca,'YLim',[65 110],'YTick',70:10:110,'XLim',[.5 4.5],'XTick',1:4,'FontName','Arial','FontSize',12,'TickDir','out','LineWidth',1);
-axis square
-% set(gca,'YLim',[65 105]);
-ylabel('Basic reading skills','FontName','Arial','FontSize',16);
-
-lmHigh = fitlm([1:4],[nanmean(wj.brs(high,1)) nanmean(wj.brs(high,2)) nanmean(wj.brs(high,3)) nanmean(wj.brs(high,4))]);
-lmLow = fitlm([1:4],[nanmean(wj.brs(low,1)) nanmean(wj.brs(low,2)) nanmean(wj.brs(low,3)) nanmean(wj.brs(low,4))]);
-readingInterceptAll(1) = lmHigh.Coefficients.Estimate(1);
-readingSlopeAll(1) = lmHigh.Coefficients.Estimate(2);
-readingInterceptAll(2) = lmLow.Coefficients.Estimate(1);
-readingSlopeAll(2) = lmLow.Coefficients.Estimate(2);
-
-% Bootstrap the slope!!!
-for iSubject = 1: length(subjectList)
-    temp1 = fitlm([1:4],wj.brs(iSubject,:));
-    slopeSubject(iSubject) = temp1.Coefficients.Estimate(2);
-end
-
-nBoots = 10e3;
-boot.high = mean(PsychRandSample(slopeSubject(high),[sum(high) nBoots]));
-boot.low = mean(PsychRandSample(slopeSubject(low),[sum(low) nBoots]));
-boot.ci.high = prctile(boot.high,[2.5 97.5]);
-boot.ci.low = prctile(boot.low,[2.5 97.5]);
-
-title('Figure 3')
-
-%% Supplementary Figure 3 - Reading growth does not depend on motion sensitivity
-
-for iSubject = 1: length(subjectList)
-    lm = fitlm([1:4],wj.brs(iSubject,:));
-    readingIntercept(iSubject) = lm.Coefficients.Estimate(1);
-    readingSlope(iSubject) = lm.Coefficients.Estimate(2);
-end
-
-[b1All,~,~,~,statsAll] = regress(readingSlope', [ones(length(readingIntercept),1) y(:,1)]);
-
-figure(6); clf; hold on;
-set(gca,'FontName','Arial','FontSize',14)
-x = linspace(0, .7,100);
-yFit = b1All(1) + b1All(2)*x;
-plot(x, yFit, 'Color',[0 0 0],'LineWidth',2);
-
-plot(y(:,1), readingSlope,'o','MarkerFaceColor',[0 0 0],'MarkerEdgeColor',[1 1 1],'MarkerSize',9);
-set(gca,'XTickLabel',{'0','20','40','60','80'})
-xlabel('Motion discrimination threshold (% coherence)')
-ylabel('Learning growth rate')
-title('Supplementary figure 3')
-
 %% Supplementary figure 2
 % Figure 2b does not depend on any specific definition of dyslexia
 % This code takes a while to run because we bootstrap the exponential fits
@@ -526,11 +524,13 @@ plot(yLow2,'o','MarkerFaceColor',ccolor(2,:),'MarkerEdgeColor',[0 0 0],'MarkerSi
 
 % From main analysis
 plot(realX,f(realX,p), '-', 'Color', [0 0 0],'LineWidth',2);
+clear p
 
 % Low Group 1
 % Using MATLAB parallel toolbox it takes 93 seconds
 % Without parallel toolbox it takes 266 seconds
 % If parallel toolbox is unavailable, simply replace 'parfor' with 'for'
+
 tic
 parfor iBoot = 1: nBoots
     obs = [];
@@ -538,11 +538,9 @@ parfor iBoot = 1: nBoots
         obs = [obs mean([yLowBoot{1,iSession}(iBoot);yLowBoot{2,iSession}(iBoot)]) mean([yLowBoot{3,iSession}(iBoot);yLowBoot{4,iSession}(iBoot)]) ...
             mean([yLowBoot{5,iSession}(iBoot);yLowBoot{6,iSession}(iBoot)])];
     end
-    p0 = [2 .15 obs(1)]; % lamda, y shift, initial point
-
-    f = @(x,p)p(2) + p(3)*exp(-x./p(1));
+    
+    p0 = [2 .15 obs(1)]; % initial points -- lamda, y shift, first block data
     errf = @(p,x,y)sum((obs(:)-f(x(:),p)).^2);
-
     pBoot(iBoot,:) = fminsearch(errf,p0,options,x,obs);
 end
 toc
@@ -550,9 +548,7 @@ bootCI = prctile(pBoot(:,2),[16 84]);
 patch([xxx fliplr(xxx)],[bootCI(1)*ones(1,12) bootCI(2)*ones(1,12)],ccolor(1,:),'FaceAlpha',.3,'LineStyle','none')
 
 obs = yLow;
-
-p0 = [2 .15 obs(1)]; % lamda, y shift, initial point
-
+p0 = [2 .15 obs(1)]; % initial points -- lamda, y shift, first block data
 f = @(x,p)p(2) + p(3)*exp(-x./p(1));
 errf = @(p,x,y)sum((obs(:)-f(x(:),p)).^2);
 
@@ -561,7 +557,7 @@ p = fminsearch(errf,p0,options,x,obs);
 realX = linspace(1,12,100);
 plot(realX,f(realX,p), '-', 'Color', ccolor(1,:),'LineWidth',2);
 
-clear pBoot
+clear pBoot p
 
 % Low group 2
 tic
@@ -571,11 +567,9 @@ parfor iBoot = 1: nBoots
         obs = [obs mean([yLow2Boot{1,iSession}(iBoot);yLow2Boot{2,iSession}(iBoot)]) mean([yLow2Boot{3,iSession}(iBoot);yLow2Boot{4,iSession}(iBoot)]) ...
             mean([yLow2Boot{5,iSession}(iBoot);yLow2Boot{6,iSession}(iBoot)])];
     end
-    p0 = [2 .15 obs(1)]; % lamda, y shift, initial point
-
-    f = @(x,p)p(2) + p(3)*exp(-x./p(1));
+    
+    p0 = [2 .15 obs(1)]; % initial points -- lamda, y shift, first block data
     errf = @(p,x,y)sum((obs(:)-f(x(:),p)).^2);
-
     pBoot(iBoot,:) = fminsearch(errf,p0,options,x,obs);
 end
 toc
@@ -583,9 +577,7 @@ bootCI = prctile(pBoot(:,2),[16 84]);
 patch([xxx fliplr(xxx)],[bootCI(1)*ones(1,12) bootCI(2)*ones(1,12)],ccolor(2,:),'FaceAlpha',.3,'LineStyle','none')
 
 obs = yLow2;
-
 p0 = [2 .15 obs(1)]; % lamda, y shift, initial point
-
 f = @(x,p)p(2) + p(3)*exp(-x./p(1));
 errf = @(p,x,y)sum((obs(:)-f(x(:),p)).^2);
 
