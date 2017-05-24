@@ -495,6 +495,7 @@ title('Supplementary figure 3')
 % Low group 1
 figure(30); clf; hold on;
 
+x = 1:12;
 nBoots = 5e3;
 % Bootstrap here and fit each bootstrapped sample
 for session = 1: 4
@@ -548,7 +549,6 @@ toc
 bootCI = prctile(pBoot(:,2),[16 84]);
 patch([xxx fliplr(xxx)],[bootCI(1)*ones(1,12) bootCI(2)*ones(1,12)],ccolor(1,:),'FaceAlpha',.3,'LineStyle','none')
 
-x = 1:12;
 obs = yLow;
 
 p0 = [2 .15 obs(1)]; % lamda, y shift, initial point
