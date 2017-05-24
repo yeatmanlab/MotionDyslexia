@@ -414,121 +414,7 @@ title('Figure 2b')
 % Non-parametric test
 [pVal,n] = signrank(nanmean([squeeze(blockData(1,1,:)) squeeze(blockData(2,1,:))],2),meanYShift);
 
-%% Supplementary figure 2
-% Figure 2b does not depend on any specific definition of dyslexia
-% This code takes a while to run because we bootstrap the exponential fits
 
-% Low group 1
-figure(30); clf; hold on;
-
-nBoots = 5e3;
-% Bootstrap here and fit each bootstrapped sample
-for session = 1: 4
-    yLowBoot{1,session} = nanmean(bootstrp(nBoots, @(x) x, squeeze(blockData(1,session,low))),2);
-    yLowBoot{2,session} = nanmean(bootstrp(nBoots, @(x) x, squeeze(blockData(2,session,low))),2);
-    yLowBoot{3,session} = nanmean(bootstrp(nBoots, @(x) x, squeeze(blockData(3,session,low))),2);
-    yLowBoot{4,session} = nanmean(bootstrp(nBoots, @(x) x, squeeze(blockData(4,session,low))),2);
-    yLowBoot{5,session} = nanmean(bootstrp(nBoots, @(x) x, squeeze(blockData(5,session,low))),2);
-    yLowBoot{6,session} = nanmean(bootstrp(nBoots, @(x) x, squeeze(blockData(6,session,low))),2);
-    
-    yLow2Boot{1,session} = nanmean(bootstrp(nBoots, @(x) x, squeeze(blockData(1,session,low2))),2);
-    yLow2Boot{2,session} = nanmean(bootstrp(nBoots, @(x) x, squeeze(blockData(2,session,low2))),2);
-    yLow2Boot{3,session} = nanmean(bootstrp(nBoots, @(x) x, squeeze(blockData(3,session,low2))),2);
-    yLow2Boot{4,session} = nanmean(bootstrp(nBoots, @(x) x, squeeze(blockData(4,session,low2))),2);
-    yLow2Boot{5,session} = nanmean(bootstrp(nBoots, @(x) x, squeeze(blockData(5,session,low2))),2);
-    yLow2Boot{6,session} = nanmean(bootstrp(nBoots, @(x) x, squeeze(blockData(6,session,low2))),2);
-end
-
-for i = 1: length(errBlock)
-    plot([i i],[yLow(i)-yLowErr(i) yLow(i)+yLowErr(i)],'-','Color',ccolor(1,:));
-end
-plot(yLow,'o','MarkerFaceColor',ccolor(1,:),'MarkerEdgeColor',[0 0 0],'MarkerSize',10);
-
-for i = 1: length(errBlock)
-    plot([i i],[yLow2(i)-yLowErr2(i) yLow2(i)+yLowErr2(i)],'-','Color',ccolor(2,:));
-end
-plot(yLow2,'o','MarkerFaceColor',ccolor(2,:),'MarkerEdgeColor',[0 0 0],'MarkerSize',10);
-
-% From main analysis
-plot(realX,f(realX,p), '-', 'Color', [0 0 0],'LineWidth',2);
-
-% Low Group 1
-% Using MATLAB parallel toolbox it takes 93 seconds
-% Without parallel toolbox it takes 266 seconds
-% If parallel toolbox is unavailable, simply replace 'parfor' with 'for'
-tic
-parfor iBoot = 1: nBoots
-    obs = [];
-    for iSession = 1: 4
-        obs = [obs mean([yLowBoot{1,iSession}(iBoot);yLowBoot{2,iSession}(iBoot)]) mean([yLowBoot{3,iSession}(iBoot);yLowBoot{4,iSession}(iBoot)]) ...
-            mean([yLowBoot{5,iSession}(iBoot);yLowBoot{6,iSession}(iBoot)])];
-    end
-    p0 = [2 .15 obs(1)]; % lamda, y shift, initial point
-
-    f = @(x,p)p(2) + p(3)*exp(-x./p(1));
-    errf = @(p,x,y)sum((obs(:)-f(x(:),p)).^2);
-
-    pBoot(iBoot,:) = fminsearch(errf,p0,options,x,obs);
-end
-toc
-bootCI = prctile(pBoot(:,2),[16 84]);
-patch([xxx fliplr(xxx)],[bootCI(1)*ones(1,12) bootCI(2)*ones(1,12)],ccolor(1,:),'FaceAlpha',.3,'LineStyle','none')
-
-obs = yLow;
-
-p0 = [2 .15 obs(1)]; % lamda, y shift, initial point
-
-f = @(x,p)p(2) + p(3)*exp(-x./p(1));
-errf = @(p,x,y)sum((obs(:)-f(x(:),p)).^2);
-
-p = fminsearch(errf,p0,options,x,obs);
-
-realX = linspace(1,12,100);
-plot(realX,f(realX,p), '-', 'Color', ccolor(1,:),'LineWidth',2);
-
-clear pBoot
-
-% Low group 2
-tic
-parfor iBoot = 1: nBoots
-    obs = [];
-    for iSession = 1: 4
-        obs = [obs mean([yLow2Boot{1,iSession}(iBoot);yLow2Boot{2,iSession}(iBoot)]) mean([yLow2Boot{3,iSession}(iBoot);yLow2Boot{4,iSession}(iBoot)]) ...
-            mean([yLow2Boot{5,iSession}(iBoot);yLow2Boot{6,iSession}(iBoot)])];
-    end
-    p0 = [2 .15 obs(1)]; % lamda, y shift, initial point
-
-    f = @(x,p)p(2) + p(3)*exp(-x./p(1));
-    errf = @(p,x,y)sum((obs(:)-f(x(:),p)).^2);
-
-    pBoot(iBoot,:) = fminsearch(errf,p0,options,x,obs);
-end
-toc
-bootCI = prctile(pBoot(:,2),[16 84]);
-patch([xxx fliplr(xxx)],[bootCI(1)*ones(1,12) bootCI(2)*ones(1,12)],ccolor(2,:),'FaceAlpha',.3,'LineStyle','none')
-
-obs = yLow2;
-
-p0 = [2 .15 obs(1)]; % lamda, y shift, initial point
-
-f = @(x,p)p(2) + p(3)*exp(-x./p(1));
-errf = @(p,x,y)sum((obs(:)-f(x(:),p)).^2);
-
-p = fminsearch(errf,p0,options,x,obs);
-
-realX = linspace(1,12,100);
-plot(realX,f(realX,p), '-', 'Color', ccolor(2,:),'LineWidth',2);
-
-plot([3.5 3.5],[0 .5],'--','Color',[0 0 0],'LineWidth',1)
-plot([6.5 6.5],[0 .5],'--','Color',[0 0 0],'LineWidth',1)
-plot([9.5 9.5],[0 .5],'--','Color',[0 0 0],'LineWidth',1)
-set(gca,'XLim',[0 13],'XTIck',1:12,'XTicklabel',{'1','2','3','1','2','3','1','2','3','1','2','3'},'TickDir','out','LineWidth',1,'FontName','Arial','FontSize',12)
-set(gca,'YLim',[.05 .45],'YTIck',.1:.1:.4,'YTickLabel',{'10','20','30','40'},'LineWidth',1,'FontName','Arial','FontSize',12)
-
-xlabel('Block within a session','FontName','Arial','FontSize',18)
-ylabel('Motion threshold (% coherence)','FontName','Arial','FontSize',18)
-
-title('Supplementary Figure 2')
 
 %% Figure 3 - Reading score growth split by motion sensitivity
 % Compare growth rates for subjects with low versus high motion sensitivity
@@ -602,3 +488,119 @@ xlabel('Motion discrimination threshold (% coherence)')
 ylabel('Learning growth rate')
 title('Supplementary figure 3')
 
+%% Supplementary figure 2
+% Figure 2b does not depend on any specific definition of dyslexia
+% This code takes a while to run because we bootstrap the exponential fits
+
+% Low group 1
+figure(30); clf; hold on;
+
+nBoots = 5e3;
+% Bootstrap here and fit each bootstrapped sample
+for session = 1: 4
+    yLowBoot{1,session} = nanmean(bootstrp(nBoots, @(x) x, squeeze(blockData(1,session,low))),2);
+    yLowBoot{2,session} = nanmean(bootstrp(nBoots, @(x) x, squeeze(blockData(2,session,low))),2);
+    yLowBoot{3,session} = nanmean(bootstrp(nBoots, @(x) x, squeeze(blockData(3,session,low))),2);
+    yLowBoot{4,session} = nanmean(bootstrp(nBoots, @(x) x, squeeze(blockData(4,session,low))),2);
+    yLowBoot{5,session} = nanmean(bootstrp(nBoots, @(x) x, squeeze(blockData(5,session,low))),2);
+    yLowBoot{6,session} = nanmean(bootstrp(nBoots, @(x) x, squeeze(blockData(6,session,low))),2);
+    
+    yLow2Boot{1,session} = nanmean(bootstrp(nBoots, @(x) x, squeeze(blockData(1,session,low2))),2);
+    yLow2Boot{2,session} = nanmean(bootstrp(nBoots, @(x) x, squeeze(blockData(2,session,low2))),2);
+    yLow2Boot{3,session} = nanmean(bootstrp(nBoots, @(x) x, squeeze(blockData(3,session,low2))),2);
+    yLow2Boot{4,session} = nanmean(bootstrp(nBoots, @(x) x, squeeze(blockData(4,session,low2))),2);
+    yLow2Boot{5,session} = nanmean(bootstrp(nBoots, @(x) x, squeeze(blockData(5,session,low2))),2);
+    yLow2Boot{6,session} = nanmean(bootstrp(nBoots, @(x) x, squeeze(blockData(6,session,low2))),2);
+end
+
+for i = 1: length(errBlock)
+    plot([i i],[yLow(i)-yLowErr(i) yLow(i)+yLowErr(i)],'-','Color',ccolor(1,:));
+end
+plot(yLow,'o','MarkerFaceColor',ccolor(1,:),'MarkerEdgeColor',[0 0 0],'MarkerSize',10);
+
+for i = 1: length(errBlock)
+    plot([i i],[yLow2(i)-yLowErr2(i) yLow2(i)+yLowErr2(i)],'-','Color',ccolor(2,:));
+end
+plot(yLow2,'o','MarkerFaceColor',ccolor(2,:),'MarkerEdgeColor',[0 0 0],'MarkerSize',10);
+
+% From main analysis
+plot(realX,f(realX,p), '-', 'Color', [0 0 0],'LineWidth',2);
+
+% Low Group 1
+% Using MATLAB parallel toolbox it takes 93 seconds
+% Without parallel toolbox it takes 266 seconds
+% If parallel toolbox is unavailable, simply replace 'parfor' with 'for'
+tic
+parfor iBoot = 1: nBoots
+    obs = [];
+    for iSession = 1: 4
+        obs = [obs mean([yLowBoot{1,iSession}(iBoot);yLowBoot{2,iSession}(iBoot)]) mean([yLowBoot{3,iSession}(iBoot);yLowBoot{4,iSession}(iBoot)]) ...
+            mean([yLowBoot{5,iSession}(iBoot);yLowBoot{6,iSession}(iBoot)])];
+    end
+    p0 = [2 .15 obs(1)]; % lamda, y shift, initial point
+
+    f = @(x,p)p(2) + p(3)*exp(-x./p(1));
+    errf = @(p,x,y)sum((obs(:)-f(x(:),p)).^2);
+
+    pBoot(iBoot,:) = fminsearch(errf,p0,options,x,obs);
+end
+toc
+bootCI = prctile(pBoot(:,2),[16 84]);
+patch([xxx fliplr(xxx)],[bootCI(1)*ones(1,12) bootCI(2)*ones(1,12)],ccolor(1,:),'FaceAlpha',.3,'LineStyle','none')
+
+x = 1:12;
+obs = yLow;
+
+p0 = [2 .15 obs(1)]; % lamda, y shift, initial point
+
+f = @(x,p)p(2) + p(3)*exp(-x./p(1));
+errf = @(p,x,y)sum((obs(:)-f(x(:),p)).^2);
+
+p = fminsearch(errf,p0,options,x,obs);
+
+realX = linspace(1,12,100);
+plot(realX,f(realX,p), '-', 'Color', ccolor(1,:),'LineWidth',2);
+
+clear pBoot
+
+% Low group 2
+tic
+parfor iBoot = 1: nBoots
+    obs = [];
+    for iSession = 1: 4
+        obs = [obs mean([yLow2Boot{1,iSession}(iBoot);yLow2Boot{2,iSession}(iBoot)]) mean([yLow2Boot{3,iSession}(iBoot);yLow2Boot{4,iSession}(iBoot)]) ...
+            mean([yLow2Boot{5,iSession}(iBoot);yLow2Boot{6,iSession}(iBoot)])];
+    end
+    p0 = [2 .15 obs(1)]; % lamda, y shift, initial point
+
+    f = @(x,p)p(2) + p(3)*exp(-x./p(1));
+    errf = @(p,x,y)sum((obs(:)-f(x(:),p)).^2);
+
+    pBoot(iBoot,:) = fminsearch(errf,p0,options,x,obs);
+end
+toc
+bootCI = prctile(pBoot(:,2),[16 84]);
+patch([xxx fliplr(xxx)],[bootCI(1)*ones(1,12) bootCI(2)*ones(1,12)],ccolor(2,:),'FaceAlpha',.3,'LineStyle','none')
+
+obs = yLow2;
+
+p0 = [2 .15 obs(1)]; % lamda, y shift, initial point
+
+f = @(x,p)p(2) + p(3)*exp(-x./p(1));
+errf = @(p,x,y)sum((obs(:)-f(x(:),p)).^2);
+
+p = fminsearch(errf,p0,options,x,obs);
+
+realX = linspace(1,12,100);
+plot(realX,f(realX,p), '-', 'Color', ccolor(2,:),'LineWidth',2);
+
+plot([3.5 3.5],[0 .5],'--','Color',[0 0 0],'LineWidth',1)
+plot([6.5 6.5],[0 .5],'--','Color',[0 0 0],'LineWidth',1)
+plot([9.5 9.5],[0 .5],'--','Color',[0 0 0],'LineWidth',1)
+set(gca,'XLim',[0 13],'XTIck',1:12,'XTicklabel',{'1','2','3','1','2','3','1','2','3','1','2','3'},'TickDir','out','LineWidth',1,'FontName','Arial','FontSize',12)
+set(gca,'YLim',[.05 .45],'YTIck',.1:.1:.4,'YTickLabel',{'10','20','30','40'},'LineWidth',1,'FontName','Arial','FontSize',12)
+
+xlabel('Block within a session','FontName','Arial','FontSize',18)
+ylabel('Motion threshold (% coherence)','FontName','Arial','FontSize',18)
+
+title('Supplementary Figure 2')
