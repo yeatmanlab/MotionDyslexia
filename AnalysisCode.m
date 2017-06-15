@@ -40,7 +40,7 @@ T.spacerace(isnan(T.spacerace)) = 0;
 cd(sprintf(fullfile(parentDir,dataDir)));
 
 % We want to exclude runs where subjects are not paying attention and
-% therefor give us bad threshold estimates. The experiment included 10
+% therefore give us bad threshold estimates. The experiment included 10
 % easy trials (70% coherence) per run. If subjects are below 70% correct
 % on these easy trials then we exclude the run.
 badCriterion = .7;
@@ -195,7 +195,7 @@ for iSubject = 1: length(controlSubjects)
                 
                 baseline.quest{iSubject,iSession} = [baseline.quest{iSubject,iSession} 10^t(1) 10^t(2)];
             end
-            cd(sprintf('%s/%s',parentDir,dataDir));
+            cd(fullfile(parentDir,dataDir));
         end
         
         badSession1 = baseline.quest{iSubject,iSession} >= 1;
