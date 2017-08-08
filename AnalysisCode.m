@@ -9,7 +9,7 @@
 
 clear variables;
 
-parentDir = '~/git/MotionDyslexia/'; % Point to directory of repo
+parentDir = fileparts(mfilename('fullpath')); % Point to directory of repo
 dataDir = 'Data'; % Data directory within repo
 
 ccolor = [
